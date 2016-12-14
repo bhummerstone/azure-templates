@@ -5,12 +5,6 @@
     "osDiskVhdUri": {
       "value": "existing-vhd"
     },
-    "osType": {
-      "value": "Windows or Linux"
-    },
-    "vmSize": {
-      "value": "Standard_A2"
-    },
     "vmName": {
       "value": "vm-name"
     }

@@ -25,6 +25,7 @@
     "subnetPrefix": "10.0.0.0/24",
     "publicIPAddressName": "[concat(parameters('vmName'), '-pip-', uniqueString(resouceGroup().id)))]",
     "virtualNetworkName": "[concat('vNet1-', resourceGroup().location()]",
+    "nsgName": "[concat(parameters('vmName'), '-nsg)]",
     "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('virtualNetworkName'))]",
     "subnetRef": "[concat(variables('vnetID'),'/subnets/',variables('subnetName'))]",
     "nicName": "[concat('vmnic-', parameters('vmName'))]"
@@ -61,15 +62,66 @@
       }
   }, 
   {
+      "apiVersion": "2015-06-15",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "[variables(nsgName)]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "default-allow-ssh",
+            "properties": {
+              "description": "Allow SSH",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 1000,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "allow-api-access",
+            "properties": {
+              "description": "Allow API Access",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "8000",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 1010,
+              "direction": "Inbound"
+            }
+          }
+        ]
+      }
+  }, 
+  {
+      "apiVersion": "2015-06-15",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('publicIPAddressName')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic"
+      }
+  },
+  {
     "apiVersion": "2015-06-15",
     "type": "Microsoft.Network/networkInterfaces",
     "name": "[variables('nicName')]",
     "location": "[resourceGroup().location]",
     "dependsOn": [
       "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]",
-      "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]"
+      "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
+      "[concat('Microsoft.Network/networkSecurityGroups/', variables('nsgName'))]"
     ],
     "properties": {
+      "networkSecurityGroup": {
+        "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgName'))]"
+      },
       "ipConfigurations": [{
         "name": "ipconfig1",
         "properties": {
@@ -83,15 +135,6 @@
         }
       }]
     }
-  }, 
-  {
-      "apiVersion": "2015-06-15",
-      "type": "Microsoft.Network/publicIPAddresses",
-      "name": "[variables('publicIPAddressName')]",
-      "location": "[resourceGroup().location]",
-      "properties": {
-        "publicIPAllocationMethod": "Dynamic"
-      }
   }, 
   {
       "apiVersion": "2015-06-15",
