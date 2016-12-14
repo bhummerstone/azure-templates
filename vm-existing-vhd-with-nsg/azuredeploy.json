@@ -19,13 +19,14 @@
     "diagStorageAccountName": "[concat(uniquestring(resourceGroup().id), 'vmdiag')]",
     "api-version": "2015-06-15",
     "addressSpacePrefix": "10.0.0.0/23",
-    "vmSize": "Standard_A2v2",
+    "vmSize": "Standard_A2_v2",
     "osType": "Linux",
     "subnetName": "subnet1",
     "subnetPrefix": "10.0.0.0/24",
-    "publicIPAddressName": "[concat(parameters('vmName'), '-pip-', uniqueString(resouceGroup().id)))]",
-    "virtualNetworkName": "[concat('vNet1-', resourceGroup().location()]",
-    "nsgName": "[concat(parameters('vmName'), '-nsg)]",
+    "publicIPAddressName": "[concat(parameters('vmName'),'pip', uniqueString(resourceGroup().id))]",
+    "publicIPDNS": "[concat(parameters('vmName'), uniqueString(resourceGroup().id))]",
+    "virtualNetworkName": "[concat('vNet1-', resourceGroup().location)]",
+    "nsgName": "[concat(parameters('vmName'), '-nsg')]",
     "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('virtualNetworkName'))]",
     "subnetRef": "[concat(variables('vnetID'),'/subnets/',variables('subnetName'))]",
     "nicName": "[concat('vmnic-', parameters('vmName'))]"
@@ -50,7 +51,7 @@
       "properties": {
         "addressSpace": {
           "addressPrefixes": [
-            "[variables('addressPrefix')]"
+            "[variables('addressSpacePrefix')]"
           ]
         },
         "subnets": [{
@@ -64,7 +65,7 @@
   {
       "apiVersion": "2015-06-15",
       "type": "Microsoft.Network/networkSecurityGroups",
-      "name": "[variables(nsgName)]",
+      "name": "[variables('nsgName')]",
       "location": "[resourceGroup().location]",
       "properties": {
         "securityRules": [
@@ -105,7 +106,10 @@
       "name": "[variables('publicIPAddressName')]",
       "location": "[resourceGroup().location]",
       "properties": {
-        "publicIPAllocationMethod": "Dynamic"
+        "publicIPAllocationMethod": "Dynamic",
+        "dnsSettings": {
+          "domainNameLabel": "[variables('publicIPDNS')]"
+        }
       }
   },
   {
@@ -171,5 +175,11 @@
           }
         }
       }
-  }]
+  }],
+  "outputs": {
+    "vm-url": {
+      "type": "string",
+      "value": "[reference(variables('publicIPAddressName')).dnsSettings.fqdn]"
+    }
+  }
 }
