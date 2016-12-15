@@ -19,7 +19,7 @@
     "diagStorageAccountName": "[concat(uniquestring(resourceGroup().id), 'vmdiag')]",
     "api-version": "2015-06-15",
     "addressSpacePrefix": "10.0.0.0/23",
-    "vmSize": "Standard_A2_v2",
+    "vmSize": "Standard_F2s",
     "osType": "Linux",
     "subnetName": "subnet1",
     "subnetPrefix": "10.0.0.0/24",
