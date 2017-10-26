@@ -1,0 +1,24 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "adminUsername": {
+      "value": "benhu"
+    },
+    "sqlAdminUsername": {
+      "value": "benhu"
+    },
+    "environmentPrefix": {
+      "value": "dev"
+    },
+    "vnetAddressSpace": {
+      "value": "10.0.0.0/16"
+    },
+    "appSubnetAddressSpace": {
+      "value": "10.0.0.0/24"
+    },
+    "resSubnetAddressSpace": {
+      "value": "10.0.1.0/24"
+    }
+  }
+}
