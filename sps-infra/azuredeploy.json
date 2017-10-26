@@ -382,6 +382,13 @@
             "sku": "2012-R2-Datacenter",
             "version": "latest"
           },
+          "dataDisks": [
+            {
+              "diskSizeGB": 64,
+              "lun": 0,
+              "createOption": "Empty"
+            }
+          ],
           "osDisk": {
             "createOption": "FromImage"
           }
@@ -426,6 +433,13 @@
             "sku": "2012-R2-Datacenter",
             "version": "latest"
           },
+          "dataDisks": [
+            {
+              "diskSizeGB": 64,
+              "lun": 0,
+              "createOption": "Empty"
+            }
+          ],
           "osDisk": {
             "createOption": "FromImage"
           }
