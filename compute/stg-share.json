@@ -2,10 +2,10 @@
     "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-        "storageAccountPrefix": {
+        "storageAccountName": {
             "type": "string",
             "metadata": {
-                "description": "Storage account naming prefix"
+                "description": "Storage account name"
             }
         },
         "storageAccountType": {
@@ -18,19 +18,23 @@
             "metadata": {
                 "description": "Storage account type"
             }
+        },
+        "fileShareName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of the share to be created"
+            }
         }
     },
     "variables": {
         "cliContainerName": "create-share",
         "cliContainerGroupName": "create-share-group",
-        "cliContainerImage": "microsoft/azure-cli:latest",
-        "storageAccountName": "[concat(parameters('storageAccountPrefix'), uniqueString(resourceGroup().id))]",
-        "fileShareName": "sftpfileshare"
+        "cliContainerImage": "microsoft/azure-cli:latest"
     },
     "resources": [
         {
             "type": "Microsoft.Storage/storageAccounts",
-            "name": "[variables('storageAccountName')]",
+            "name": "[parameters('storageAccountName')]",
             "apiVersion": "2018-02-01",
             "location": "[resourceGroup().location]",
             "sku": {
@@ -45,7 +49,7 @@
             "apiVersion": "2018-04-01",
             "location": "[resourceGroup().location]",
             "dependsOn": [
-                "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]"
+                "[concat('Microsoft.Storage/storageAccounts/', parameters('storageAccountName'))]"
             ],
             "properties": {
                 "containers": [
@@ -59,16 +63,16 @@
                                 "share",
                                 "create",
                                 "--name",
-                                "[variables('fileShareName')]"
+                                "[parameters('fileShareName')]"
                             ],
                             "environmentVariables": [
                                 {
                                     "name": "AZURE_STORAGE_KEY",
-                                    "value": "[listKeys(variables('storageAccountName'),'2018-02-01').keys[0].value]"
+                                    "value": "[listKeys(parameters('storageAccountName'),'2018-02-01').keys[0].value]"
                                 },
                                 {
                                     "name": "AZURE_STORAGE_ACCOUNT",
-                                    "value": "[variables('storageAccountName')]"
+                                    "value": "[parameters('storageAccountName')]"
                                 }
                             ],
                             "resources": {
