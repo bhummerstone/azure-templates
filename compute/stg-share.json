@@ -49,7 +49,7 @@
             "apiVersion": "2018-04-01",
             "location": "[resourceGroup().location]",
             "dependsOn": [
-                "[concat('Microsoft.Storage/storageAccounts/', parameters('storageAccountName'))]"
+                "parameters('storageAccountName')]"
             ],
             "properties": {
                 "containers": [
@@ -68,7 +68,7 @@
                             "environmentVariables": [
                                 {
                                     "name": "AZURE_STORAGE_KEY",
-                                    "value": "[(listKeys(parameters('storageAccountName'),'2018-02-01')).keys[0].value]"
+                                    "value": "[listKeys(parameters('storageAccountName'),'2018-02-01').keys[0].value]"
                                 },
                                 {
                                     "name": "AZURE_STORAGE_ACCOUNT",
