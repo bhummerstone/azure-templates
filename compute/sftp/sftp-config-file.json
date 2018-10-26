@@ -19,7 +19,7 @@
                 "description": "Storage account type"
             }
         },
-        "fileShareName": {
+        "uploadFileShareName": {
             "type": "string",
             "defaultValue": "sftpfileshare",
             "metadata": {
@@ -32,12 +32,6 @@
             "metadata": {
                 "description": "Username to use for SFTP access"
             }
-        },
-        "sftpPassword": {
-            "type": "securestring",
-            "metadata": {
-                "description": "Password to use for SFTP access"
-            }
         }
     },
     "variables": {
@@ -47,7 +41,6 @@
         "sftpContainerName": "sftp",
         "sftpContainerGroupName": "sftp-group",
         "sftpContainerImage": "atmoz/sftp:latest",
-        "sftpEnvVariable": "[concat(parameters('sftpUser'), ':', parameters('sftpPassword'), ':1001')]",
         "storageAccountName": "[concat(parameters('storageAccountPrefix'), uniqueString(resourceGroup().id))]"
     },
     "resources": [
@@ -58,7 +51,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "https://raw.githubusercontent.com/bhummerstone/azure-templates/master/compute/sftp/stg-share.json",
+                    "uri": "https://raw.githubusercontent.com/bhummerstone/azure-templates/master/compute/sftp/stg-share-config-file.json",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
@@ -68,8 +61,11 @@
                     "storageAccountType": {
                         "value": "[parameters('storageAccountType')]"
                     },
-                    "fileShareName": {
-                        "value": "[parameters('fileShareName')]"
+                    "sshKeyFileShareName": {
+                        "value": "[parameters('sftpUser')]"
+                    },
+                    "uploadFileShareName": {
+                        "value": "[parameters('uploadFileShareName')]"
                     }
                 }
             }
@@ -88,12 +84,6 @@
                         "name": "[variables('sftpContainerName')]",
                         "properties": {
                             "image": "[variables('sftpContainerImage')]",
-                            "environmentVariables": [
-                                {
-                                    "name": "SFTP_USERS",
-                                    "value": "[variables('sftpEnvVariable')]"
-                                }
-                            ],
                             "resources": {
                                 "requests": {
                                     "cpu": 1,
@@ -107,9 +97,14 @@
                             ],
                             "volumeMounts": [
                                 {
-                                    "mountPath": "[concat('/home/', parameters('sftpUser'), '/upload')]",
+                                    "mountPath": "/home/ftp/upload",
                                     "name": "sftpvolume",
                                     "readOnly": false
+                                },
+                                {
+                                    "mountPath": "[concat('/home/', parameters('sftpUser'), '/.ssh/keys')]",
+                                    "name": "sshkeyvolume",
+                                    "readOnly": true
                                 }
                             ]
                         }
@@ -131,7 +126,16 @@
                         "name": "sftpvolume",
                         "azureFile": {
                             "readOnly": false,
-                            "shareName": "[parameters('fileShareName')]",
+                            "shareName": "[parameters('uploadFileShareName')]",
+                            "storageAccountName": "[variables('storageAccountName')]",
+                            "storageAccountKey": "[reference('stg-deployment').outputs.storageKey.value]"
+                        }
+                    },
+                    {
+                        "name": "sshkeyvolume",
+                        "azureFile": {
+                            "readOnly": false,
+                            "shareName": "[parameters('sftpUser')]",
                             "storageAccountName": "[variables('storageAccountName')]",
                             "storageAccountKey": "[reference('stg-deployment').outputs.storageKey.value]"
                         }
