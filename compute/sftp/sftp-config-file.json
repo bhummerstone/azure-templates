@@ -41,6 +41,7 @@
         "sftpContainerName": "sftp",
         "sftpContainerGroupName": "sftp-group",
         "sftpContainerImage": "atmoz/sftp:latest",
+        "sftpEnvVariable": "[concat(parameters('sftpUser'), '::1001')]",
         "storageAccountName": "[concat(parameters('storageAccountPrefix'), uniqueString(resourceGroup().id))]"
     },
     "resources": [
@@ -84,6 +85,12 @@
                         "name": "[variables('sftpContainerName')]",
                         "properties": {
                             "image": "[variables('sftpContainerImage')]",
+                            "environmentVariables": [
+                                {
+                                    "name": "SFTP_USERS",
+                                    "value": "[variables('sftpEnvVariable')]"
+                                }
+                            ],
                             "resources": {
                                 "requests": {
                                     "cpu": 1,

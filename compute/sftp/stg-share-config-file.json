@@ -64,12 +64,9 @@
                         "properties": {
                             "image": "[variables('cliContainerImage')]",
                             "command": [
-                                "az",
-                                "storage",
-                                "share",
-                                "create",
-                                "--name",
-                                "[parameters('sshKeyFileShareName')]"
+                                "sh",
+                                "-c",
+                                "[concat('az storage share create --name ', parameters('sshKeyFileShareName'), '; az storage share create --name ', parameters('uploadFileShareName'))]"
                             ],
                             "environmentVariables": [
                                 {
