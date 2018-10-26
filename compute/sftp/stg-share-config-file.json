@@ -69,14 +69,7 @@
                                 "share",
                                 "create",
                                 "--name",
-                                "[parameters('sshKeyFileShareName')]",
-                                "&&",
-                                "az",
-                                "storage",
-                                "share",
-                                "create",
-                                "--name",
-                                "[parameters('uploadFileShareName')]"
+                                "[parameters('sshKeyFileShareName')]"
                             ],
                             "environmentVariables": [
                                 {
