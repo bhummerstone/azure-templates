@@ -26,12 +26,6 @@
                 "description": "Name of existing file share to be mounted for user ssh keys"
             }
         },
-        "existingHostConfigFileShareName": {
-            "type": "string",
-            "metadata": {
-                "description": "Name of existing file share to be mounted for host config"
-            }
-        },
         "sftpUser": {
             "type": "string",
             "metadata": {
@@ -44,12 +38,31 @@
             "metadata": {
                 "description": "Primary location for resources"
             }
+        },
+        "containerRegistry": {
+            "type": "string",
+            "metadata": {
+                "description": "Container registry for custom image"
+            }
+        },
+        "containerRegistryUsername": {
+            "type": "string",
+            "metadata": {
+                "description": "Username for custom container registry"
+            }
+        },
+        "containerRegistryPassword": {
+            "type": "string",
+            "metadata": {
+                "description": "Password for custom container registry"
+            }
         }
     },
     "variables": {
         "sftpContainerName": "sftp",
         "sftpContainerGroupName": "sftp-group",
-        "sftpContainerImage": "atmoz/sftp:latest",
+        "sftpDNSLabel": "bhsftp01",
+        "sftpContainerImage": "[concat(parameters('containerRegistry'), '/sftp:latest')]",
         "sftpEnvVariable": "[concat(parameters('sftpUser'), '::1001')]",
         "storageAccountId": "[resourceId(parameters('existingStorageAccountResourceGroupName'), 'Microsoft.Storage/storageAccounts', parameters('existingStorageAccountName'))]"
     },
@@ -105,16 +118,18 @@
                                     "mountPath": "[concat('/home/', parameters('sftpUser'), '/.ssh/keys')]",
                                     "name": "sshkeyvolume",
                                     "readOnly": true
-                                },
-                                {
-                                    "mountPath": "/etc/ssh]",
-                                    "name": "hostconfigvolume",
-                                    "readOnly": true
                                 }
                             ]
                         }
                     }
                 ],
+                "imageRegistryCredentials": [
+                        {
+                            "server": "[parameters('containerRegistry')]",
+                            "username": "[parameters('containerRegistryUsername')]",
+                            "password": "[parameters('containerRegistryPassword')]"
+                        }
+                    ],
                 "osType": "Linux",
                 "ipAddress": {
                     "type": "Public",
@@ -123,7 +138,8 @@
                             "protocol": "TCP",
                             "port": 22
                         }
-                    ]
+                    ],
+                    "dnsNameLabel": "[variables('sftpDNSLabel')]"
                 },
                 "restartPolicy": "OnFailure",
                 "volumes": [
@@ -144,15 +160,6 @@
                             "storageAccountName": "[parameters('existingStorageAccountName')]",
                             "storageAccountKey": "[listKeys(variables('storageAccountId'),'2018-02-01').keys[0].value]"
                         }
-                    },
-                    {
-                        "name": "hostconfigvolume",
-                        "azureFile": {
-                            "readOnly": true,
-                            "shareName": "[parameters('existingHostConfigFileShareName')]",
-                            "storageAccountName": "[parameters('existingStorageAccountName')]",
-                            "storageAccountKey": "[listKeys(variables('storageAccountId'),'2018-02-01').keys[0].value]"
-                        }
                     }
                 ]
             }
@@ -161,7 +168,7 @@
     "outputs": {
         "containerIPv4Address": {
             "type": "string",
-            "value": "[reference(resourceId('Microsoft.ContainerInstance/containerGroups/', variables('sftpContainerGroupName'))).ipAddress.ip]"
+            "value": "[reference(resourceId('Microsoft.ContainerInstance/containerGroups/', variables('sftpContainerGroupName'))).ipAddress.fqdn]"
         }
     }
 }
