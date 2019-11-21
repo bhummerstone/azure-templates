@@ -104,7 +104,7 @@
                             ],
                             "volumeMounts": [
                                 {
-                                    "mountPath": "/home/ftp/upload",
+                                    "mountPath": "[concat('/home/', parameters('sftpUser'), '/upload')]",
                                     "name": "sftpvolume",
                                     "readOnly": false
                                 },
