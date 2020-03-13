@@ -1,0 +1,357 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "environment": {
+        "type": "string",
+        "metadata": {
+          "description": "Environment for the budget. Sourced from the ARM_ENVIRONMENT environment variable."
+        }
+      },
+      "subId": {
+          "type": "string",
+          "metadata": {
+              "description": "Subscription ID for budget. Sourced from the ARM_SUBSCRIPTION_ID environment variable"
+          }
+      },
+      "location": {
+          "type": "string",
+          "defaultValue": "uksouth",
+          "allowedValues": [
+              "uksouth",
+              "ukwest"
+          ],
+          "metadata": {
+              "description": "Short name for location"
+          }
+      },
+      "amount": {
+        "type": "string",
+        "metadata": {
+          "description": "The total amount of cost or usage to track with the budget"
+        }
+      },
+      "budgetCategory": {
+        "type": "string",
+        "defaultValue": "Cost",
+        "allowedValues": [
+          "Cost",
+          "Usage"
+        ],
+        "metadata": {
+          "description": "The category of the budget, whether the budget tracks cost or usage."
+        }
+      },
+      "timeGrain": {
+        "type": "string",
+        "defaultValue": "Monthly",
+        "allowedValues": [
+          "Monthly",
+          "Quarterly",
+          "Annually"
+        ],
+        "metadata": {
+          "description": "The time covered by a budget. Tracking of the amount will be reset based on the time grain."
+        }
+      },
+      "startDate": {
+        "type": "string",
+        "defaultValue": "[concat(utcNow('yyyy'), '-', utcNow('MM'), '-01')]",
+        "metadata": {
+          "description": "The start date must be first of the month in YYYY-MM-DD format. Future start date should not be more than three months. Past start date should be selected within the timegrain preiod."
+        }
+      },
+      "endDate": {
+          "type": "string",
+          "metadata": {
+              "description": "The end date for the budget."
+          }
+      },
+      "operator": {
+        "type": "string",
+        "defaultValue": "GreaterThan",
+        "allowedValues": [
+          "EqualTo",
+          "GreaterThan",
+          "GreaterThanOrEqualTo"
+        ],
+        "metadata": {
+          "description": "The comparison operator."
+        }
+      },
+      "firstThreshold": {
+        "type": "string",
+        "defaultValue": "50",
+        "metadata": {
+          "description": "Threshold value associated with the first notification. Notification is sent when the cost exceeded the threshold. It is always percent and has to be between 0 and 1000."
+        }
+      },
+      "secondThreshold": {
+        "type": "string",
+        "defaultValue": "75",
+        "metadata": {
+          "description": "Threshold value associated with the second notification. Notification is sent when the cost exceeded the threshold. It is always percent and has to be between 0 and 1000."
+        }
+      },
+      "thirdThreshold": {
+        "type": "string",
+        "defaultValue": "90",
+        "metadata": {
+          "description": "Threshold value associated with the third notification. Notification is sent when the cost exceeded the threshold. It is always percent and has to be between 0 and 1000."
+        }
+      },
+      "firstThresholdActionGroupName": {
+        "type": "string",
+        "metadata": {
+          "description": "The action group name to send the budget notification to when the first threshold is exceeded."
+        }
+      },
+      "secondThresholdActionGroupName": {
+        "type": "string",
+        "metadata": {
+          "description": "The action group name to send the budget notification to when the second threshold is exceeded"
+        }
+      },
+      "thirdThresholdActionGroupName": {
+        "type": "string",
+        "metadata": {
+          "description": "The action group name to send the budget notification to when the third threshold is exceeded"
+        }
+      },
+      "firstThresholdActionGroupShortName": {
+        "type": "string",
+        "metadata": {
+          "description": "The action group short name to send the budget notification to when the first threshold is exceeded"
+        }
+      },
+      "secondThresholdActionGroupShortName": {
+        "type": "string",
+        "metadata": {
+          "description": "The action group short name to send the budget notification to when the second threshold is exceeded"
+        }
+      },
+      "thirdThresholdActionGroupShortName": {
+        "type": "string",
+        "metadata": {
+          "description": "The action group short name to send the budget notification to when the third threshold is exceeded"
+        }
+      },
+      "firstThresholdActionGroupEmailReceivers": {
+        "type": "array",
+        "metadata": {
+          "description": "The action group email addresses to receive the budget notification when the first threshold is exceeded"
+        }
+      },
+      "secondThresholdActionGroupEmailReceivers": {
+        "type": "array",
+        "metadata": {
+          "description": "The action group email addresses to receive the budget notification when the second threshold is exceeded"
+        }
+      },
+      "thirdThresholdActionGroupEmailReceivers": {
+        "type": "array",
+        "metadata": {
+          "description": "The action group email addresses to receive the budget notification when the third threshold is exceeded"
+        }
+      },
+      "resourceGroupName": {
+          "type": "string",
+          "metadata": {
+              "description": "Name of resource group in which to create action groups"
+          }
+      }
+    },
+    "variables": {
+        "uniqueName": "[concat(parameters('environment'), '-', substring(parameters('location'), 0 , 3), '-', substring(parameters('subId'), sub(length(parameters('subId')), 6), 6))]",
+        "budgetName": "[concat('budget-', variables('uniqueName'))]",
+        "rgName": "[concat('rg-', variables('uniqueName'), '-', parameters('resourceGroupName'))]",
+        "firstActionGroupName": "[concat('actgp-', variables('uniqueName'), '-', parameters('firstThresholdActionGroupName'))]",
+        "secondActionGroupName": "[concat('actgp-', variables('uniqueName'), '-', parameters('secondThresholdActionGroupName'))]",
+        "thirdActionGroupName": "[concat('actgp-', variables('uniqueName'), '-', parameters('thirdThresholdActionGroupName'))]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Resources/resourceGroups",
+            "apiVersion": "2018-05-01",
+            "location": "[parameters('location')]",
+            "name": "[variables('rgName')]",
+            "properties": {}
+          },
+          {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "name": "budgetActionGroups",
+            "resourceGroup": "[variables('rgName')]",
+            "dependsOn": [
+              "[resourceId('Microsoft.Resources/resourceGroups/', variables('rgName'))]"
+            ],
+            "properties": {
+              "mode": "Incremental",
+              "expressionEvaluationOptions": {
+                "scope": "inner"
+              },
+              "template": {
+                "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                "contentVersion": "1.0.0.0",
+                "parameters": {
+                    "firstActionGroupName": {
+                        "type": "string"
+                      },
+                      "secondActionGroupName": {
+                        "type": "string"
+                      },
+                      "thirdActionGroupName": {
+                        "type": "string"
+                      },
+                    "firstThresholdActionGroupShortName": {
+                      "type": "string"
+                      },
+                      "secondThresholdActionGroupShortName": {
+                        "type": "string"
+                      },
+                      "thirdThresholdActionGroupShortName": {
+                        "type": "string"
+                      },
+                      "firstThresholdActionGroupEmailReceivers": {
+                        "type": "array"
+                      },
+                      "secondThresholdActionGroupEmailReceivers": {
+                        "type": "array"
+                      },
+                      "thirdThresholdActionGroupEmailReceivers": {
+                        "type": "array"
+                      }
+                },
+                "variables": {},
+                "resources": [
+                    {
+                        "type": "Microsoft.Insights/actionGroups",
+                        "apiVersion": "2018-03-01",
+                        "name": "[parameters('firstActionGroupName')]",
+                        "location": "Global",
+                        "properties": {
+                          "groupShortName": "[parameters('firstThresholdActionGroupShortName')]",
+                          "enabled": true,
+                          "emailReceivers": "[parameters('firstThresholdActionGroupEmailReceivers')]"
+                        }
+                    },
+                    {
+                        "type": "Microsoft.Insights/actionGroups",
+                        "apiVersion": "2018-03-01",
+                        "name": "[parameters('secondActionGroupName')]",
+                        "location": "Global",
+                        "properties": {
+                          "groupShortName": "[parameters('secondThresholdActionGroupShortName')]",
+                          "enabled": true,
+                          "emailReceivers": "[parameters('secondThresholdActionGroupEmailReceivers')]"
+                        }
+                    },
+                    {
+                        "type": "Microsoft.Insights/actionGroups",
+                        "apiVersion": "2018-03-01",
+                        "name": "[parameters('thirdActionGroupName')]",
+                        "location": "Global",
+                        "properties": {
+                          "groupShortName": "[parameters('thirdThresholdActionGroupShortName')]",
+                          "enabled": true,
+                          "emailReceivers": "[parameters('thirdThresholdActionGroupEmailReceivers')]"
+                        }
+                    }
+                ],
+                "outputs": {
+                    "firstActionGroupId":{
+                        "type":"string",
+                        "value":"[resourceId('Microsoft.Insights/actionGroups',parameters('firstActionGroupName'))]"
+                    },
+                    "secondActionGroupId":{
+                        "type":"string",
+                        "value":"[resourceId('Microsoft.Insights/actionGroups',parameters('secondActionGroupName'))]"
+                    },
+                    "thirdActionGroupId":{
+                        "type":"string",
+                        "value":"[resourceId('Microsoft.Insights/actionGroups',parameters('thirdActionGroupName'))]"
+                    }
+                }
+              },
+              "parameters": {
+                "firstActionGroupName": {
+                    "value": "[variables('firstActionGroupName')]"
+                  },
+                  "secondActionGroupName": {
+                    "value": "[variables('secondActionGroupName')]"
+                  },
+                  "thirdActionGroupName": {
+                    "value": "[variables('thirdActionGroupName')]"
+                  },
+                "firstThresholdActionGroupShortName": {
+                    "value": "[parameters('firstThresholdActionGroupShortName')]"
+                  },
+                  "secondThresholdActionGroupShortName": {
+                    "value": "[parameters('secondThresholdActionGroupShortName')]"
+                  },
+                  "thirdThresholdActionGroupShortName": {
+                    "value": "[parameters('thirdThresholdActionGroupShortName')]"
+                  },
+                  "firstThresholdActionGroupEmailReceivers": {
+                    "value": "[parameters('firstThresholdActionGroupEmailReceivers')]"
+                  },
+                  "secondThresholdActionGroupEmailReceivers": {
+                    "value": "[parameters('secondThresholdActionGroupEmailReceivers')]"
+                  },
+                  "thirdThresholdActionGroupEmailReceivers": {
+                    "value": "[parameters('thirdThresholdActionGroupEmailReceivers')]"
+                  }
+                }
+            }
+          },
+        {
+            "type": "Microsoft.Consumption/budgets",
+            "name": "[variables('budgetName')]",
+            "apiVersion": "2019-10-01",
+            "dependsOn": [
+                "budgetActionGroups"
+            ],
+            "properties": {
+            "category": "[parameters('budgetCategory')]",
+            "amount": "[parameters('amount')]",
+            "timeGrain": "[parameters('timeGrain')]",
+            "timePeriod": {
+                "startDate": "[parameters('startDate')]",
+                "endDate": "[parameters('endDate')]"
+            },
+            "notifications": {
+                "First-Notification": {
+                    "enabled": true,
+                    "operator": "[parameters('operator')]",
+                    "threshold": "[parameters('firstThreshold')]",
+                    "contactGroups": [
+                        "[reference('budgetActionGroups').outputs.firstActionGroupId.value]"
+                    ]
+                },
+                "Second-Notification": {
+                    "enabled": true,
+                    "operator": "[parameters('operator')]",
+                    "threshold": "[parameters('secondThreshold')]",
+                    "contactGroups": [
+                        "[reference('budgetActionGroups').outputs.secondActionGroupId.value]"
+                    ]
+                },
+                "Third-Notification": {
+                    "enabled": true,
+                    "operator": "[parameters('operator')]",
+                    "threshold": "[parameters('thirdThreshold')]",
+                    "contactGroups": [
+                        "[reference('budgetActionGroups').outputs.thirdActionGroupId.value]"
+                    ]
+                }
+            }
+            }
+      }
+    ],
+    "outputs": {
+      "budgetName": {
+        "type": "string",
+        "value": "[variables('budgetName')]"
+      }
+    }
+  }
