@@ -1,6 +1,7 @@
 param storageAccountPrefix string
 param storageAccountType string = 'Standard_LRS'
-param fileShareName string = 'sftpfileshare'
+param sftpFileShareName string = 'sftpfileshare'
+param sshKeyFileShareName string = 'sskkeyvolume'
 param sftpUser string = 'sftp'
 
 var sftpContainerName = 'sftp'
@@ -19,8 +20,12 @@ resource stgacct 'Microsoft.Storage/storageAccounts@2019-06-01' = {
   }
 }
 
-resource fileshare 'Microsoft.Storage/storageAccounts/fileServices/shares@2019-06-01' = {
-  name: toLower('${stgacct.name}/default/${fileShareName}')
+resource sftpfileshare 'Microsoft.Storage/storageAccounts/fileServices/shares@2019-06-01' = {
+  name: toLower('${stgacct.name}/default/${sftpFileShareName}')
+}
+
+resource sshfileshare 'Microsoft.Storage/storageAccounts/fileServices/shares@2019-06-01' = {
+  name: toLower('${stgacct.name}/default/${sshKeyFileShareName}')
 }
 
 resource containergroup 'Microsoft.ContainerInstance/containerGroups@2019-12-01' = {
@@ -82,7 +87,7 @@ resource containergroup 'Microsoft.ContainerInstance/containerGroups@2019-12-01'
         name: 'sftpvolume'
         azureFile:{
           readOnly: false
-          shareName: fileShareName
+          shareName: sftpFileShareName
           storageAccountName: stgacct.name
           storageAccountKey: listKeys(stgacct.id, '2019-06-01').keys[0].value
         }
@@ -91,7 +96,7 @@ resource containergroup 'Microsoft.ContainerInstance/containerGroups@2019-12-01'
         name: 'sshkeyvolume'
         azureFile:{
           readOnly: true
-          shareName: 'sftp-config'
+          shareName: sshKeyFileShareName
           storageAccountName: stgacct.name
           storageAccountKey: listKeys(stgacct.id, '2019-06-01').keys[0].value
         }
