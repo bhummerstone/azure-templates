@@ -10,7 +10,7 @@ var sftpContainerName = 'sftp'
 var sftpContainerGroupName = 'sftp-group'
 var sftpContainerImage = 'atmoz/sftp:latest'
 var sftpEnvVariable = '${sftpUser}:${sftpPassword}:1001'
-var storageAccountName = '${storageAccountPrefix}uniquniqueString(resourceGroup().id)'
+var storageAccountName = '${storageAccountPrefix}${uniqueString(resourceGroup().id)}'
 var location = resourceGroup().location
 
 resource stgacct 'Microsoft.Storage/storageAccounts@2019-06-01' = {
@@ -23,7 +23,7 @@ resource stgacct 'Microsoft.Storage/storageAccounts@2019-06-01' = {
 }
 
 resource fileshare 'Microsoft.Storage/storageAccounts/fileServices/shares@2019-06-01' = {
-  name: '${stgacct.name}/default/${fileShareName}'
+  name: toLower('${stgacct.name}/default/${fileShareName}')
 }
 
 resource containergroup 'Microsoft.ContainerInstance/containerGroups@2019-12-01' = {
@@ -80,7 +80,7 @@ resource containergroup 'Microsoft.ContainerInstance/containerGroups@2019-12-01'
         name: 'sftpvolume'
         azureFile:{
           readOnly: false
-          shareName: fileshare.name
+          shareName: fileShareName
           storageAccountName: stgacct.name
           storageAccountKey: listKeys(stgacct.id, '2019-06-01').keys[0].value
         }
