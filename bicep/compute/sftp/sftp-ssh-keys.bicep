@@ -2,14 +2,11 @@ param storageAccountPrefix string
 param storageAccountType string = 'Standard_LRS'
 param fileShareName string = 'sftpfileshare'
 param sftpUser string = 'sftp'
-param sftpPassword string {
-  secure: true
-}
 
 var sftpContainerName = 'sftp'
 var sftpContainerGroupName = 'sftp-group'
 var sftpContainerImage = 'atmoz/sftp:latest'
-var sftpEnvVariable = '${sftpUser}:${sftpPassword}:1001'
+var sftpEnvVariable = '${sftpUser}::1001'
 var storageAccountName = '${storageAccountPrefix}${uniqueString(resourceGroup().id)}'
 var location = resourceGroup().location
 
@@ -59,6 +56,11 @@ resource containergroup 'Microsoft.ContainerInstance/containerGroups@2019-12-01'
               name: 'sftpvolume'
               readOnly: false
             }
+            {
+              mountPath: '/home/${sftpUser}/.ssh/keys'
+              name: 'sshkeyvolume'
+              readOnly: true
+            }
           ]
         }
       }
@@ -81,6 +83,15 @@ resource containergroup 'Microsoft.ContainerInstance/containerGroups@2019-12-01'
         azureFile:{
           readOnly: false
           shareName: fileShareName
+          storageAccountName: stgacct.name
+          storageAccountKey: listKeys(stgacct.id, '2019-06-01').keys[0].value
+        }
+      }
+      {
+        name: 'sshkeyvolume'
+        azureFile:{
+          readOnly: true
+          shareName: 'sftp-config'
           storageAccountName: stgacct.name
           storageAccountKey: listKeys(stgacct.id, '2019-06-01').keys[0].value
         }
