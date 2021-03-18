@@ -94,7 +94,11 @@ resource containergroup 'Microsoft.ContainerInstance/containerGroups@2019-12-01'
             }
           ]
           command: [
-            './daprd --app-id storage-proxy --components-path /components'
+            '/daprd'
+            '--app-id'
+            'storage-proxy'
+            '--components-path'
+            '/components'
           ]
           resources: {
             requests: {
@@ -104,7 +108,7 @@ resource containergroup 'Microsoft.ContainerInstance/containerGroups@2019-12-01'
           }
           ports: [
             {
-              port: 50001
+              port: 3500
               protocol: 'TCP'
             }
           ]
