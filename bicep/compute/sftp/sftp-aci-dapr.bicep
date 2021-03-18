@@ -67,7 +67,7 @@ resource containergroup 'Microsoft.ContainerInstance/containerGroups@2019-12-01'
           command: [
             '/bin/bash'
             '-c'
-            'apt-get update; apt-get install inotify-tools wget -y;wget https://gist.githubusercontent.com/bhummerstone/92420db52c499f2e4e7a131240354cc2/raw/940a8be2dd2d22192780cd340e9040c1623e3d50/watcher-dapr.sh; chmod +x  watcher-dapr.sh; ./watcher-dapr.sh'
+            'apt-get update; apt-get install inotify-tools curl -y;curl https://gist.githubusercontent.com/bhummerstone/92420db52c499f2e4e7a131240354cc2/raw/940a8be2dd2d22192780cd340e9040c1623e3d50/watcher-dapr.sh -o watcher-dapr.sh; chmod +x  watcher-dapr.sh; ./watcher-dapr.sh'
           ]
           resources: {
             requests: {
