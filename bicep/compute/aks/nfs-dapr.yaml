@@ -20,19 +20,21 @@ spec:
             claimName: dapr-components
       containers:
         - name: nfs
-          image: ehough/docker-nfs-server:latest
+          image: itsthenetwork/nfs-server-alpine
           volumeMounts:
             - name: shared
-              mountPath: /mnt/nfs-shared
+              mountPath: /nfsshare
           ports:
             - containerPort: 2049
               name: nfs
           env:
-            - name: NFS_EXPORT_0
-              value: "/mnt/nfs-shared *(rw,no_subtree_check)"
+            - name: SYNC
+              value: "true"
+            - name: SHARED_DIRECTORY
+              value: /nfsshare
           securityContext:
             capabilities:
-              add: ["SYS_ADMIN"]
+              add: ["SYS_ADMIN", "SETPCAP"]
         - name: watcher
           image: ubuntu:latest
           volumeMounts:
