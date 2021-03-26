@@ -1,10 +1,8 @@
 param sftpUser string = 'sftp'
-param sftpPassword string {
-  secure: true
-}
-param daprAPIToken string {
-  secure: true
-}
+@secure()
+param sftpPassword string
+@secure()
+param daprAPIToken string
 param daprStorageAccountName string = 'bhdapr'
 param daprFileShareName string = 'dapr-components'
 
