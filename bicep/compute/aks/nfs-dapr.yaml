@@ -33,8 +33,7 @@ spec:
             - name: SHARED_DIRECTORY
               value: /nfsshare
           securityContext:
-            capabilities:
-              add: ["SYS_ADMIN", "SETPCAP"]
+            privileged: true
         - name: watcher
           image: ubuntu:latest
           volumeMounts:
