@@ -1,3 +1,3 @@
 # azure-templates
 
-Azure Templates wot I've made
+Random Azure templates for various fun things
