@@ -59,6 +59,81 @@ var linuxConfiguration = {
   }
 }
 
+var diskEncryptionSetName = 'des-${vmName}-uks'
+var keyVaultName = take('kv-${vmName}-${uniqueString(resourceGroup().id)}-uks', 24)
+var encryptionKeyName = 'enc-key-${vmName}'
+
+resource keyvault 'Microsoft.KeyVault/vaults@2021-04-01-preview' = {
+  name: keyVaultName
+  location: location
+  properties: {
+    accessPolicies: [
+    ]
+    enabledForDeployment: true
+    enabledForDiskEncryption: true
+    enabledForTemplateDeployment: true
+    enablePurgeProtection: true
+    enableRbacAuthorization: false
+    enableSoftDelete: true
+    networkAcls: {
+      bypass: 'AzureServices'
+      defaultAction: 'Allow'
+    }
+    sku: {
+      family: 'A'
+      name: 'standard'
+    }
+    tenantId: subscription().tenantId
+  }
+}
+
+resource encryptionkey 'Microsoft.KeyVault/vaults/keys@2021-04-01-preview' = {
+  name: '${keyvault.name}/${encryptionKeyName}'
+  properties: {
+    keySize: 4096
+    kty: 'RSA'
+  }
+}
+
+resource diskset 'Microsoft.Compute/diskEncryptionSets@2020-12-01' = {
+  name: diskEncryptionSetName
+  location: location
+  identity: {
+    type: 'SystemAssigned'
+  }
+  properties: {
+    encryptionType: 'EncryptionAtRestWithCustomerKey'
+    activeKey: {
+      sourceVault: {
+        id: keyvault.id
+      }
+      keyUrl: encryptionkey.properties.keyUriWithVersion
+    }
+    rotationToLatestKeyVersionEnabled: true
+  }
+}
+
+resource kvaccesspoliy 'Microsoft.KeyVault/vaults/accessPolicies@2019-09-01' = {
+  name: '${keyvault.name}/add'
+  properties: {
+    accessPolicies: [
+      {
+        objectId: diskset.identity.principalId
+        tenantId: subscription().tenantId
+        permissions: {
+          keys: [
+            'get'
+            'wrapKey'
+            'unwrapKey'
+          ]
+          secrets: []
+          certificates: []
+        }
+      }
+    ]
+  }
+}
+
 resource nic 'Microsoft.Network/networkInterfaces@2020-06-01' = {
   name: networkInterfaceName
   location: location
@@ -68,7 +143,7 @@ resource nic 'Microsoft.Network/networkInterfaces@2020-06-01' = {
         name: 'ipconfig1'
         properties: {
           subnet: {
-            id: subnet.id
+            id: '${vnet.id}/subnets/${subnetName}'
           }
           privateIPAllocationMethod: 'Dynamic'
           publicIPAddress: {
@@ -114,16 +189,14 @@ resource vnet 'Microsoft.Network/virtualNetworks@2020-06-01' = {
         addressPrefix
       ]
     }
-  }
-}
-
-resource subnet 'Microsoft.Network/virtualNetworks/subnets@2020-06-01' = {
-  parent: vnet
-  name: subnetName
-  properties: {
-    addressPrefix: subnetAddressPrefix
-    privateEndpointNetworkPolicies: 'Enabled'
-    privateLinkServiceNetworkPolicies: 'Enabled'
+    subnets: [
+      {
+        name: subnetName
+        properties: {
+          addressPrefix: subnetAddressPrefix
+        }
+      }
+    ]
   }
 }
 
@@ -134,7 +207,7 @@ resource publicIP 'Microsoft.Network/publicIPAddresses@2020-06-01' = {
     name: 'Standard'
   }
   properties: {
-    publicIPAllocationMethod: 'Dynamic'
+    publicIPAllocationMethod: 'Static'
     publicIPAddressVersion: 'IPv4'
     dnsSettings: {
       domainNameLabel: dnsLabelPrefix
@@ -142,7 +215,7 @@ resource publicIP 'Microsoft.Network/publicIPAddresses@2020-06-01' = {
     idleTimeoutInMinutes: 4
   }
   zones: [
-      "1"
+      '1'
   ]
 }
 
@@ -158,6 +231,9 @@ resource vm 'Microsoft.Compute/virtualMachines@2020-06-01' = {
         createOption: 'FromImage'
         managedDisk: {
           storageAccountType: osDiskType
+          diskEncryptionSet: {
+            id: diskset.id
+          }
         }
       }
       imageReference: {
@@ -182,7 +258,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2020-06-01' = {
     }
   }
     zones: [
-        "1"
+        '1'
     ]
 }
 
