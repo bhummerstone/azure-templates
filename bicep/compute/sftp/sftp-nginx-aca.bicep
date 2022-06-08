@@ -1,7 +1,6 @@
 param storageAccountPrefix string
 param storageAccountType string = 'Standard_LRS'
 param sftpFileShareName string = 'sftpfileshare'
-param nginxFileShareName string = 'nginxfileshare'
 
 param logAnalyticsName string = 'sftp-nginx-${toLower(resourceGroup().name)}'
 
@@ -9,17 +8,20 @@ param containerEnvName string = 'sftp-nginx-env'
 param containerAppName string = 'sftp-nginx-app'
 param minReplica int = 1
 param maxReplica int = 2
-var sftpContainerName = 'sftp'
-var nginxContainerName = 'nginx'
-var sftpContainerImage = 'atmoz/sftp:latest'
-var nginxContainerImage = 'nginx:latest'
+param nginxContainerRegistry string = 'sftpmariner.azurecr.io'
+param nginxContainerRegistryUser string = 'sftpmariner'
+@secure()
+param nginxContainerRegistryPassword string
 
 param sftpUser string = 'sftp'
 @secure()
 param sftpPassword string
 param location string = resourceGroup().location
 
-
+var sftpContainerName = 'sftp'
+var nginxContainerName = 'nginx'
+var sftpContainerImage = 'atmoz/sftp:latest'
+var nginxContainerImage = '${nginxContainerRegistry}/nginx-sftp:latest'
 var sftpEnvVariable = '${sftpUser}:${sftpPassword}:1001'
 var storageAccountName = '${storageAccountPrefix}${uniqueString(resourceGroup().id)}'
 
@@ -34,10 +36,6 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2019-06-01' = {
 
 resource sftpFileShare 'Microsoft.Storage/storageAccounts/fileServices/shares@2019-06-01' = {
   name: toLower('${storageAccount.name}/default/${sftpFileShareName}')
-}
-
-resource nginxFileShare 'Microsoft.Storage/storageAccounts/fileServices/shares@2019-06-01' = {
-  name: toLower('${storageAccount.name}/default/${nginxFileShareName}')
 }
 
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2021-06-01' = {
@@ -64,20 +62,9 @@ resource containerAppEnv 'Microsoft.App/managedEnvironments@2022-03-01' = {
   }
 }
 
-resource containerAppEnvNginxStorage 'Microsoft.App/managedEnvironments/storages@2022-03-01' = {
-  name: '${nginxContainerName}-storage'
-  properties: {
-    azureFile: {
-      accountName: storageAccount.name
-      accountKey: storageAccount.listKeys().keys[0].value
-      shareName: nginxFileShareName
-      accessMode: 'ReadOnly'
-    }
-  }
-}
-
 resource containerAppEnvSftpStorage 'Microsoft.App/managedEnvironments/storages@2022-03-01' = {
   name: '${sftpContainerName}-storage'
+  parent: containerAppEnv
   properties: {
     azureFile: {
       accountName: storageAccount.name
@@ -94,6 +81,16 @@ resource containerApp 'Microsoft.App/containerApps@2022-03-01' = {
   properties: {
     managedEnvironmentId: containerAppEnv.id
     configuration: {
+      secrets: [
+        {
+          name: 'nginxregpwd'
+          value: nginxContainerRegistryPassword
+        }
+        {
+          name: 'sftpenvvariable'
+          value: sftpEnvVariable
+        }
+      ]
       ingress: {
         external: true
         targetPort: 2222
@@ -105,23 +102,24 @@ resource containerApp 'Microsoft.App/containerApps@2022-03-01' = {
           }
         ]
       }
+      registries: [
+        {
+          server: nginxContainerRegistry
+          username: nginxContainerRegistryUser
+          passwordSecretRef: 'nginxregpwd'
+        }
+      ]
     }
     template: {
-      revisionSuffix: 'firstrevision'
+      revisionSuffix: 'secondrevision'
       containers: [
         {
           name: nginxContainerName
           image: nginxContainerImage
           resources: {
-            cpu: json('.5')
+            cpu: json('.25')
             memory: '.5Gi'
           }
-          volumeMounts: [
-            {
-                mountPath: '/etc/nginx'
-                volumeName: 'nginx-volume'
-            }
-          ]
         }
         {
           name: sftpContainerName
@@ -129,11 +127,11 @@ resource containerApp 'Microsoft.App/containerApps@2022-03-01' = {
           env: [
             {
               name: 'SFTP_USERS'
-              value: sftpEnvVariable
+              secretRef: 'sftpenvvariable'
             }
           ]
           resources: {
-            cpu: json('.5')
+            cpu: json('.25')
             memory: '.5Gi'
           }
           volumeMounts: [
@@ -147,27 +145,12 @@ resource containerApp 'Microsoft.App/containerApps@2022-03-01' = {
       scale: {
         minReplicas: minReplica
         maxReplicas: maxReplica
-        rules: [
-          {
-            name: 'http-requests'
-            http: {
-              metadata: {
-                concurrentRequests: '10'
-              }
-            }
-          }
-        ]
       }
       volumes: [
         {
-          name: containerAppEnvNginxStorage.name
+          name: 'sftp-volume'
           storageType: 'AzureFile'
-          storageName: '${nginxContainerName}-storage'
-        }
-        {
-          name: containerAppEnvSftpStorage.name
-          storageType: 'AzureFile'
-          storageName: '${sftpContainerName}-storage'
+          storageName: containerAppEnvSftpStorage.name
         }
       ]
     }
