@@ -114,7 +114,6 @@ resource containerApp 'Microsoft.App/containerApps@2022-10-01' = {
         external: true
         targetPort: 22
         exposedPort: 22
-        allowInsecure: true
         traffic: [
           {
             latestRevision: true
