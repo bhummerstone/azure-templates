@@ -74,6 +74,14 @@ resource acaVNet 'Microsoft.Network/virtualNetworks@2022-09-01' = {
         name: acaSubnetName
         properties: {
           addressPrefix: acaSubnetPrefix
+          delegations: [
+            {
+              name: 'Microsoft.App.environments'
+              properties: {
+                serviceName: 'Microsoft.App/environments'
+              }
+            }
+          ]
         }
       }
     ]
@@ -180,6 +188,6 @@ resource containerApp 'Microsoft.App/containerApps@2022-11-01-preview' = {
         }
       ]
     }
-    workloadProfileType: workloadProfile
+    workloadProfileName: workloadProfileName
   }
 }
