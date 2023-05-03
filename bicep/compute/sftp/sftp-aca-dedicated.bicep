@@ -106,7 +106,7 @@ resource containerAppEnv 'Microsoft.App/managedEnvironments@2022-11-01-preview' 
     workloadProfiles: [
       {
         maximumCount: 1
-        minimumCount: 0
+        minimumCount: 1
         workloadProfileType: workloadProfile
         name: workloadProfileName
       }
