@@ -25,6 +25,7 @@ param maxReplica int = 2
   ]
 )
 param workloadProfile string = 'D4'
+param workloadProfileName string = 'sftp'
 
 param sftpUser string = 'sftp'
 @secure()
@@ -79,7 +80,7 @@ resource acaVNet 'Microsoft.Network/virtualNetworks@2022-09-01' = {
   }
 }
 
-resource containerAppEnv 'Microsoft.App/managedEnvironments@2022-10-01' = {
+resource containerAppEnv 'Microsoft.App/managedEnvironments@2022-11-01-preview' = {
   name: containerEnvName
   location: location
   properties: {
@@ -99,6 +100,7 @@ resource containerAppEnv 'Microsoft.App/managedEnvironments@2022-10-01' = {
         maximumCount: 1
         minimumCount: 0
         workloadProfileType: workloadProfile
+        name: workloadProfileName
       }
     ]
   }
@@ -117,11 +119,11 @@ resource containerAppEnvSftpStorage 'Microsoft.App/managedEnvironments/storages@
   }
 }
 
-resource containerApp 'Microsoft.App/containerApps@2022-10-01' = {
+resource containerApp 'Microsoft.App/containerApps@2022-11-01-preview' = {
   name: containerAppName
   location: location
   properties: {
-    managedEnvironmentId: containerAppEnv.id
+    environmentId: containerAppEnv.id
     configuration: {
       secrets: [
         {
